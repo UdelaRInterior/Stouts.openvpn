@@ -14,9 +14,6 @@ port {{ openvpn_port }}
 
 # TCP or UDP server?
 proto {{ openvpn_proto }}
-{% if openvpn_ipv6_enabled %}
-proto {{ openvpn_proto }}6
-{% endif %}
 
 {% if openvpn_ipv6_enabled | bool %}
 proto {{ openvpn_proto }}6
