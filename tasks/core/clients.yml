@@ -7,6 +7,14 @@
   loop: "{{ openvpn_clients }}"
   register: openvpn_clients_changed
 
+- name: Revoke clients requested for
+  file: 
+    path: "{{ openvpn_etcdir }}/ovpns/{{ revoked_client.name }}.ovpn"
+    state: absent
+  loop: "{{ openvpn_clients_revoke }}"
+  loop_control:
+    loop_var: revoked_client
+
 - name: Pack clients
   command: >-
     zip -j
@@ -67,3 +75,29 @@
     comment: drop-client-to-client
   notify: openvpn save iptables
   when: openvpn_client_to_client_via_ip | bool
+
+- name: Send credentials to users by email
+  mail: 
+    host: "{{ openvpn_sender.host }}"
+    port: "{{ openvpn_sender.port | default(587) }}"
+    username: "{{ openvpn_sender.username | default( omit ) }}"
+    password: "{{ openvpn_sender.password | default( omit ) }}"
+    secure: "{{ openvpn_sender.secure  | default( omit ) }}"
+    from: "{{ openvpn_sender.from  | default( omit ) }}"
+    to: "{{ openvpn_person.fullName }} <{{ openvpn_person.email }}>"
+    subject: "{{ openvpn_send_credentials_subject }}"
+    body: "{{ openvpn_send_credentials_body }}"
+    attach:
+    -  "{{ openvpn_etcdir }}/ovpns/{{ openvpn_person.name }}.zip"
+  # delegate_to: localhost
+  # become: no
+  loop: "{{ openvpn_users }}"
+  loop_control:
+    index_var: index
+    loop_var: openvpn_person
+  when: 
+  - openvpn_send_credentials 
+  - openvpn_clients_changed.results[index] is changed or openvpn_person.name in openvpn_send_force
+  - openvpn_person.email is defined
+
+...
