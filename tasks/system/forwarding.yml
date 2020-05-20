@@ -7,7 +7,7 @@
     sysctl_set: true
     state: present
     reload: true
-  when:  not lookup('env', 'IN_MOLECULE') | d(false, true) | bool
+  when: not lookup('env', 'IN_MOLECULE') | d(false, true) | bool
 
 - name: Set IPv6 forwarding in the sysctl file and reload if necessary
   sysctl:
@@ -18,4 +18,4 @@
     reload: true
   when:
     not lookup('env', 'IN_MOLECULE') | d(false, true) | bool
-    and openvpn_ipv6_server is defined
+    and openvpn_ipv6_server | length > 0
