@@ -125,12 +125,71 @@ openvpn_route_ranges: []
 openvpn_dns_servers: []
 # }}}
 # Clients {{{
-openvpn_clients:
-  - client
-# Make clients certificate
+
+openvpn_send_credentials: false
+# Whether to send credentials to users - this variable is set to false for backwards compatibility
+
+openvpn_sender:
+  host: smtp.mydomain.org
+  port: 587
+  username: user
+  password: put_it_outside_code
+  secure: starttls
+  from: me@mydomain.org
+# Data needed to send mails 
+
+openvpn_send_credentials_subject: "VPN credentials"
+# Subject for email sending credentials
+
+openvpn_send_credentials_body: |
+  Hello {{ openvpn_person.fullName }},
+  You will find attached the {{ openvpn_person.name }}.zip archive, with your credentials, configuration file and CA certificate
+  to configure your VPN access. 
+
+  You must first install OpenVPN in your operating system and then configure your VPN access. 
+
+  Regards,
+  the IT team
+# The body of the mail sent to user
+
+openvpn_users:
+  - name: client1
+    email: client1@domain.org
+    fullName: Full Name1
+  - name: client2
+    email: client2@domain.org
+    fullName: Full Name2
+# Users data to make clients certificates and send them bye email
+
+# openvpn_clients: "{{ openvpn_users | json_query('[*].name') }}"
+openvpn_clients: "{{ openvpn_users | map(attribute='name') | list }}"
+# Make clients certificate - this variable remains for backwards compatibility
+# If openvpn_send_credentials is set to false, openvpn_users is not specifically needed and only openvpn_clients can be defined as:
+# openvpn_clients:
+#   - client1
+#   - client2
+
+# Remember your easy_rsa must create clients credentials. 
+# If you are using nkakouros.easyrsa role, you can define: 
+## If you use the openvpn_users structure hereabove: 
+# easyrsa_clients: "{{ openvpn_users | json_query('[*].{name: name}') }}"
+## If you don't send credentials by mail and use directly the openvpn_clients structure hereabove: 
+# easyrsa_clients: "{{ openvpn_clients | json_query('[*].{name: @}') }}"
+
+openvpn_send_force: []
+# List of client names that request to be sent their credentials
+# openvpn_send_force:
+#   - client1
 
 openvpn_clients_revoke: []
 # Revoke clients certificates
+# openvpn_clients_revoke:
+#   - name: my_old_client
+#     reason: superseded
+# 'reason' can have the values listed here: https://security.stackexchange.com/questions/174327/definitions-for-crl-reasons
+# Only .ovpn files are now managed, as credentials are managed by easy_rsa
+# If you use nkakouros.easyrsa, you can define for this role: 
+# easyrsa_revoked: "{{ openvpn_clients_revoke }}"
 
 openvpn_client_options: []
 # Additional client options. These will be placed in the ovpn files of all the
